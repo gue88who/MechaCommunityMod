@@ -1,0 +1,26 @@
+﻿Mecha Community Mod
+
+Open "Mecha Community Mod Launcher" in the game folder to choose features
+and stats. Settings save automatically; launcher changes apply next launch.
+Play starts the game through Steam. The first start may take longer.
+
+F8 toggles the live overlay. The selected-unit Stats button opens unit stats;
+Stats on the results screen opens the post-game report. Each view has Settings
+and ? help. In-game display changes apply immediately; Hide by default controls
+the next launch. Start replays from the beginning for full stats.
+
+Supported: Mechabellum 2.0.0.3.2328 (Steam build 25626184).
+The stats mod disables itself on unsupported builds. The launcher offers
+Play vanilla, which also disables the loader for that launch.
+
+Update: close the game and launcher, then run the new installer.
+Setup offers Update available when a newer public release exists. It downloads
+the installer, verifies its checksum, and runs it.
+Your settings are kept. Defaults resets them immediately.
+
+Remove: use Uninstall in the launcher or Windows Installed Apps.
+Game files and replays are kept. Reports are kept unless you choose
+"Delete saved match stats". Shared loaders are preserved.
+
+Setup includes the mod, launcher, BepInEx and required runtimes.
+Logs: BepInEx/LogOutput.log

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../../Shared/IniDocument.cs" Link="IniDocument.cs" />
+    <Compile Include="../../Shared/TableSettingsMigration.cs" Link="TableSettingsMigration.cs" />
+    <Compile Include="../../Shared/SettingsCatalog.cs" Link="SettingsCatalog.cs" />
+    <Compile Include="../../Shared/GameCompatibility.cs" Link="GameCompatibility.cs" />
+    <Compile Include="../../Shared/ModIdentity.cs" Link="ModIdentity.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>MechaCommunityMod.BattleStatistics</AssemblyName>
+    <BepInExCoreDir Condition="'$(BepInExCoreDir)' == ''">$(BEPINEX_CORE_DIR)</BepInExCoreDir>
+    <GameInteropDir Condition="'$(GameInteropDir)' == ''">$(MECHABELLUM_INTEROP_DIR)</GameInteropDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../compatibility.json" LogicalName="MechaCommunityMod.compatibility.json" />
+    <Reference Include="$(BepInExCoreDir)/BepInEx.Core.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)/BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)/Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)/0Harmony.dll" Private="false" />
+    <Reference Include="$(GameInteropDir)/*.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="CheckDependencies" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(BepInExCoreDir)/BepInEx.Unity.IL2CPP.dll')" Text="BepInEx 6 IL2CPP core is missing. Set BepInExCoreDir or BEPINEX_CORE_DIR." />
+    <Error Condition="!Exists('$(GameInteropDir)/GRFight.dll')" Text="Generated game bindings are missing. Set GameInteropDir or MECHABELLUM_INTEROP_DIR to BepInEx/interop." />
+  </Target>
+</Project>

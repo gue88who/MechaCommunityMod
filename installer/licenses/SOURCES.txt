@@ -1,0 +1,23 @@
+Bundled third-party components remain separate from the overlay and launcher.
+Their original notices are included here and in the loader/runtime files.
+
+BepInEx build 788, commit 5b766a3 (unmodified, LGPL-2.1):
+https://github.com/BepInEx/BepInEx/tree/5b766a3
+https://github.com/BepInEx/BepInEx/archive/5b766a3.zip
+https://builds.bepinex.dev/projects/bepinex_be/788
+
+Microsoft .NET runtime and Windows Forms:
+https://github.com/dotnet/runtime
+https://github.com/dotnet/winforms
+https://github.com/dotnet/wpf
+
+Unity managed reference libraries:
+https://unity.bepinex.dev/libraries/2022.3.62.zip
+
+The loader archive also contains Doorstop, Il2CppInterop, Cpp2IL, Harmony and
+other dependencies distributed by the upstream BepInEx release. The loader
+changelog identifies that build; source repositories are available from:
+https://github.com/BepInEx/UnityDoorstop
+https://github.com/BepInEx/Il2CppInterop
+https://github.com/SamboyCoding/Cpp2IL
+https://github.com/BepInEx/HarmonyX

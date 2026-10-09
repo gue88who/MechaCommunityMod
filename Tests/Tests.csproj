@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Plugins/BattleStatistics/MatchSupport.cs" Link="MatchSupport.cs" />
+    <Compile Include="../Plugins/BattleStatistics/StatsTable.cs" Link="StatsTable.cs" />
+    <Compile Include="../Plugins/BattleStatistics/TablePanning.cs" Link="TablePanning.cs" />
+    <Compile Include="../Plugins/BattleStatistics/SquadStats.cs" Link="SquadStats.cs" />
+    <Compile Include="../Plugins/BattleStatistics/UnitLevels.cs" Link="UnitLevels.cs" />
+    <Compile Include="../Plugins/BattleStatistics/StatsPresentation.cs" Link="StatsPresentation.cs" />
+    <Compile Include="../Plugins/BattleStatistics/OverlayWindowPolicy.cs" Link="OverlayWindowPolicy.cs" />
+    <Compile Include="../Plugins/BattleStatistics/SideHudLayout.cs" Link="SideHudLayout.cs" />
+    <Compile Include="../Shared/GameCompatibility.cs" Link="GameCompatibility.cs" />
+    <EmbeddedResource Include="../compatibility.json" LogicalName="MechaCommunityMod.compatibility.json" />
+    <Compile Include="../Plugins/BattleStatistics/DamageModel.cs" Link="DamageModel.cs" />
+    <Compile Include="../Plugins/BattleStatistics/DamageSources.cs" Link="DamageSources.cs" />
+    <Compile Include="../Plugins/BattleStatistics/DamageBreakdown.cs" Link="DamageBreakdown.cs" />
+    <Compile Include="../Plugins/BattleStatistics/MatchHistory.cs" Link="MatchHistory.cs" />
+    <Compile Include="../Plugins/BattleStatistics/RoundResults.cs" Link="RoundResults.cs" />
+    <Compile Include="../Plugins/BattleStatistics/OverkillStore.cs" Link="OverkillStore.cs" />
+    <Compile Include="../Plugins/BattleStatistics/OverkillHit.cs" Link="OverkillHit.cs" />
+    <Compile Include="../Plugins/BattleStatistics/UnitCosts.cs" Link="UnitCosts.cs" />
+    <Compile Include="../Plugins/BattleStatistics/Contributions.cs" Link="Contributions.cs" />
+    <Compile Include="../Plugins/BattleStatistics/LateUnitStats.cs" Link="LateUnitStats.cs" />
+    <Compile Include="../Plugins/BattleStatistics/StatsArchive.cs" Link="StatsArchive.cs" />
+    <Compile Include="../Plugins/BattleStatistics/PlayerAvatars.cs" Link="PlayerAvatars.cs" />
+    <Compile Include="../Plugins/BattleStatistics/BoardMap.cs" Link="BoardMap.cs" />
+    <Compile Include="../Plugins/BattleStatistics/UnitSelection.cs" Link="UnitSelection.cs" />
+  </ItemGroup>
+</Project>
