@@ -19,6 +19,38 @@ internal sealed class SideHudSpace
     private readonly Il2CppStructArray<Vector3> _corners = new(4);
     private float _discoverAt;
     private float _warnAt;
+    private static bool _unitsDiscovered;
+    private float _measureAt, _measuredScale;
+    private int _measuredWidth, _measuredHeight;
+    private (HudBounds[] Controls, HudBounds[] LowerControls) _bounds = (Array.Empty<HudBounds>(), Array.Empty<HudBounds>());
+
+    internal static CardInfoPanel? ActiveUnitPanel()
+    {
+        if (!_unitsDiscovered)
+        {
+            _unitsDiscovered = true;
+            foreach (var panel in Resources.FindObjectsOfTypeAll<CardInfoPanel>())
+                if (panel != null) Track(panel);
+        }
+        foreach (var panel in Panels.Values)
+            if (panel != null && panel.TryCast<CardInfoPanel>() is { } card
+                && card.gameObject.activeInHierarchy && card.actor != null) return card;
+        return null;
+    }
+
+    internal static Sprite? AvatarSprite(string source)
+    {
+        // Init hooks retain the native HUD panels. Search those small hierarchies
+        // rather than all loaded images, including assets outside the match.
+        foreach (var panel in Panels.Values)
+        {
+            if (panel == null || !panel.gameObject.activeInHierarchy) continue;
+            foreach (var image in panel.GetComponentsInChildren<GRImage>(false))
+                if (image != null && image.avatar == source
+                    && image.avatarObj?.GetComponent<Image>()?.sprite is { } sprite) return sprite;
+        }
+        return null;
+    }
 
     internal static void Track(Component panel)
     {
@@ -56,6 +88,9 @@ internal sealed class SideHudSpace
 
     internal (HudBounds[] Controls, HudBounds[] LowerControls) ReadBounds(float scale)
     {
+        if (_seenRevision == _revision && Time.unscaledTime < _measureAt
+            && scale == _measuredScale && Screen.width == _measuredWidth && Screen.height == _measuredHeight)
+            return _bounds;
         using var timing = new SlowOperation("HUD placement");
         try
         {
@@ -116,7 +151,9 @@ internal sealed class SideHudSpace
                 (lowerHud ? lowerControls : controls).Add(new(xMin / pixelsPerUnit, (Screen.height - yMax) / pixelsPerUnit,
                     xMax / pixelsPerUnit, (Screen.height - yMin) / pixelsPerUnit));
             }
-            return (controls.ToArray(), lowerControls.ToArray());
+            _measureAt = Time.unscaledTime + .1f;
+            _measuredScale = scale; _measuredWidth = Screen.width; _measuredHeight = Screen.height;
+            return _bounds = (controls.ToArray(), lowerControls.ToArray());
         }
         catch (Exception e)
         {

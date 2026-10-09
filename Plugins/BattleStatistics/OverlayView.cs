@@ -79,6 +79,7 @@ internal sealed class OverlayView : IDisposable
 
     internal void Refresh(OverlaySnapshot snapshot, GameReader reader)
     {
+        using var timing = new SlowOperation("side panel rendering");
         var scale = BattleStatisticsPlugin.Scale.Value;
         var spectating = MatchClient.Current?.IsWatchMode() == true;
         if (_spectating != spectating)
@@ -139,7 +140,7 @@ internal sealed class OverlayView : IDisposable
         }
         finally { GUI.depth = oldDepth; }
     }
-    internal void ClosePopups() { _help.Close(); _settings.Close(); _helpInput.gameObject.SetActive(false); }
+    internal void ClosePopups() { _help.Close(); _settings.Close(); if (_helpInput != null) _helpInput.gameObject.SetActive(false); }
     public void Dispose() { ClosePopups(); _skin.Dispose(); Object.Destroy(_root); }
 
     private sealed class SidePanel

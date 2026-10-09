@@ -50,14 +50,18 @@ internal static class SquadTracker
     }
     internal static void RegisterDeployment()
     {
+        using var timing = new SlowOperation("squad registration");
         if (!MatchSupport.Allowed) return;
-        var players = MatchClient.Current?.GetPlayerManager()?.playerControllers;
+        var match = MatchClient.Current;
+        var live = match?.IsInFightPhase() == true;
+        var players = match?.GetPlayerManager()?.playerControllers;
         if (players is null) return;
         for (var p = 0; p < players.Count; p++)
         {
             var player = players[p]; var manager = player.GetUnitManager();
             var team = player.GetFightTeamController()?.GetTeamIndex() ?? -1;
             if (team < 0) continue;
+            var current = live ? Current(player.GetFightTeamController()) : null;
             var units = manager.units;
             for (var i = 0; i < units.Count; i++)
             {
@@ -68,9 +72,8 @@ internal static class SquadTracker
                 if (!Deployed.TryGetValue(id, out var identity))
                     Deployed[id] = identity = new(id, SquadNames.At(_next++), key, unit.GetMechCount() > 1);
                 Recorders[meches.Pointer.ToInt64()] = identity;
-                if (MatchClient.Current?.IsInFightPhase() == true && meches.GetCurrentTeamController()?.GetTeamIndex() == team
-                    && Current(player.GetFightTeamController()) is { } current)
-                    CaptureLevel(current.Round, team, identity, meches);
+                if (current is { } fight && meches.GetCurrentTeamController()?.GetTeamIndex() == team)
+                    CaptureLevel(fight.Round, team, identity, meches);
                 var actors = unit.GetFightActors();
                 var actorCount = actors.Cast<Il2CppSystem.Collections.Generic.IReadOnlyCollection<FightActor>>().Count;
                 for (var a = 0; a < actorCount; a++)

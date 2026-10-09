@@ -47,6 +47,7 @@ internal sealed class SelectedUnitView : IDisposable
 
     internal void Observe(GameReader reader, bool resultsVisible)
     {
+        using var timing = new SlowOperation("selected unit refresh");
         if (_session != reader.History.Session)
         { _session = reader.History.Session; _open = false; _round = -1; _expanded.Clear(); _expandedUnits.Clear(); _help.Close(); _settings.Close(); }
         if (_native == null || !_native.gameObject.activeInHierarchy)
@@ -54,8 +55,7 @@ internal sealed class SelectedUnitView : IDisposable
             if (Time.unscaledTime >= _retryAt)
             {
                 _retryAt = Time.unscaledTime + 1;
-                var native = Resources.FindObjectsOfTypeAll<CardInfoPanel>()
-                    .FirstOrDefault(p => p != null && p.gameObject.activeInHierarchy && p.actor != null);
+                var native = SideHudSpace.ActiveUnitPanel();
                 if (native != null && (_native == null || native.Pointer != _native.Pointer))
                 { DestroyButton(); _native = native; }
             }

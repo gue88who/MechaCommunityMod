@@ -37,6 +37,7 @@ internal sealed class GameReader
 
     internal OverlaySnapshot? Read(bool archiveOnly = false)
     {
+        using var timing = new SlowOperation("native stats reading");
         if (!MatchSupport.Allowed) { Status = null; return null; }
         var match = MatchClient.Current;
         if (match is null || (!match.IsStarted && !match.IsFinished))
@@ -138,6 +139,15 @@ internal sealed class GameReader
                     CostHooks.Squads(_leftTeamIndex), CostHooks.Squads(_rightTeamIndex));
             for (var i = 0; acceptArchive && i < count; i++)
             {
+                // Once settlement has captured the last fight, deployment changes
+                // cannot change its statistics. Explicit end hooks still refresh it.
+                if (!live && _roundSettled && !archiveOnly && i + 1 == count
+                    && History.Find(i + 1) is { Complete: true } settled)
+                {
+                    if (archive![i]?.Pointer == round?.Pointer)
+                        (displayLeft, displayRight) = (settled.Left, settled.Right);
+                    continue;
+                }
                 if (!History.NeedsArchiveRound(i + 1, count)) continue;
                 var saved = archive![i];
                 if (saved is not null)
@@ -184,6 +194,7 @@ internal sealed class GameReader
 
     internal void SaveStats(bool force = false)
     {
+        using var timing = new SlowOperation("archive snapshot");
         _archive.DrainMessages((error, message) =>
         {
             if (error) BattleStatisticsPlugin.Logger.LogWarning(message);
@@ -380,6 +391,7 @@ internal sealed class GameReader
 
     private TeamStats ReadTeam(RoundStatisticData? round, int index)
     {
+        using var timing = new SlowOperation("team stats reading");
         var samples = new List<DamageSample>();
         if (round is null)
             return DamageModel.Group(samples);

@@ -14,6 +14,7 @@ internal static class NativeAvatarCapture
         if (remote && uri!.Host.Equals("avatars.steamstatic.com", StringComparison.OrdinalIgnoreCase)) return;
         if (RetryAfter.GetValueOrDefault(source) > Time.unscaledTime) return;
         RetryAfter[source] = Time.unscaledTime + 10;
+        using var timing = new SlowOperation("avatar capture");
         RenderTexture? render = null;
         Texture2D? copy = null;
         var previous = RenderTexture.active;
@@ -25,12 +26,10 @@ internal static class NativeAvatarCapture
             var sprite = remote ? manager.GetDynamicSprite(source) : manager.GetSprite(source);
             if (sprite == null)
             {
-                var image = Resources.FindObjectsOfTypeAll<GRImage>()
-                    .FirstOrDefault(i => i != null && i.gameObject.activeInHierarchy && i.avatar == source);
-                sprite = image?.avatarObj?.GetComponent<UnityEngine.UI.Image>()?.sprite;
+                sprite = SideHudSpace.AvatarSprite(source);
             }
             if (sprite == null)
-            { BattleStatisticsPlugin.Logger.LogWarning("Selected avatar is not loaded yet: " + source); return; }
+            { return; }
             var texture = sprite.texture;
             var region = sprite.textureRect;
             render = RenderTexture.GetTemporary(texture.width, texture.height, 0);
