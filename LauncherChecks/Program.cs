@@ -4,6 +4,21 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 var checks = new (string Name, Action Run)[] {
+    ("Launcher update accepts only newer official release tags and matching checksums", () => {
+        const string root = "https://github.com/gue88who/MechaCommunityMod/releases/tag/";
+        var update = ReleaseUpdate.FromLocation(new Uri(root + "v0.9.102"), "0.9.101");
+        Check(update?.AssetName == "MechaCommunityMod-0.9.102-Setup.exe", "Wrong update asset");
+        foreach (var url in new[] { root + "v0.9.101", root + "v0.9.99", root + "v0.9.102-beta", root + "v0.9.102/extra", "https://example.com/v9.0.0" })
+            Check(ReleaseUpdate.FromLocation(new Uri(url), "0.9.101") is null, "Invalid release accepted");
+        Check(ReleaseUpdate.FromLocation(new Uri("/relative", UriKind.Relative), "0.9.101") is null, "Relative URL accepted");
+        var hash = new string('a', 64);
+        Check(ReleaseUpdate.Checksum(hash + "  " + update!.AssetName, update.AssetName) == hash, "Valid checksum rejected");
+        foreach (var invalid in new[] { "", hash + "  other.exe", "abc  " + update.AssetName }) {
+            var rejected = false;
+            try { ReleaseUpdate.Checksum(invalid, update.AssetName); } catch (InvalidDataException) { rejected = true; }
+            Check(rejected, "Invalid checksum accepted");
+        }
+    }),
     ("Unsupported or unverifiable builds launch vanilla with the loader disabled", () => WithGame(game => {
         var plan = GameLaunch.For(game.GameDirectory);
         Check(!plan.ModEnabled && plan.Message.Contains("Wait for a newer Mecha Community Mod build"), "Unsupported build was accepted");

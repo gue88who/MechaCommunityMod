@@ -30,7 +30,7 @@ Play or watch replays from the beginning to capture the full match. Reports save
 
 ## Update or uninstall
 
-Close the game before updating. Run a newer Setup, or click **Update available** in Setup to download, verify, and run the latest installer. Your saved settings are kept.
+Close the game before updating. Click **Update available** in the launcher or Setup to download, verify, and run the latest installer. You can also run a newer Setup directly. Your saved settings are kept.
 
 Use **Uninstall** in the launcher or Windows Installed Apps to remove the mod. Game files and replays are kept. Saved reports are kept unless you choose to delete them.
 

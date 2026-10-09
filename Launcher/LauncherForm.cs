@@ -12,6 +12,8 @@ internal sealed class LauncherForm : Form
     private readonly List<Button> _buttons = new();
     private readonly Button _launchButton;
     private readonly Button _vanillaButton;
+    private readonly Button _updateButton;
+    private ReleaseUpdate? _update;
     private readonly CancellationTokenSource _closing = new();
     private bool _busy;
     private bool _checking = true;
@@ -20,7 +22,7 @@ internal sealed class LauncherForm : Form
     private bool _populating;
     private Dictionary<string, string> _savedValues = new();
 
-    internal LauncherForm(Installation game)
+    internal LauncherForm(Installation game, Func<CancellationToken, Task<ReleaseUpdate?>>? checkUpdate = null)
     {
         _game = game;
         Text = ModIdentity.Name;
@@ -53,11 +55,15 @@ internal sealed class LauncherForm : Form
         var values = game.ReadSettings(); Populate(values); _savedValues = values;
         foreach (var checkbox in _inputs.Values)
             checkbox.CheckedChanged += (_, _) => { if (!_populating && !_busy) ApplySettings(); };
-        var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = false, Padding = new Padding(0, 12, 0, 6) };
+        var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true, Padding = new Padding(0, 12, 0, 6) };
         actions.Controls.Add(ActionButton("Uninstall", Uninstall));
         var defaults = ActionButton("Defaults", () => { Populate(SettingsCatalog.ReadDefaults(_game.DefaultsPath)); ApplySettings(); });
         defaults.Visible = false;
         actions.Controls.Add(defaults);
+        _updateButton = CreateButton("Update available");
+        _updateButton.Visible = false;
+        _updateButton.Click += async (_, _) => await InstallUpdate();
+        actions.Controls.Add(_updateButton);
         _launchButton = CreateButton("Play");
         _launchButton.Enabled = false;
         _vanillaButton = CreateButton("Play vanilla");
@@ -83,6 +89,17 @@ internal sealed class LauncherForm : Form
             SetBusy(_busy);
             ShowStatus("");
         };
+        Shown += async (_, _) =>
+        {
+            try
+            {
+                var update = await (checkUpdate is null ? ReleaseUpdate.Check(ModIdentity.Version, _closing.Token) : checkUpdate(_closing.Token));
+                if (IsDisposed || _closing.IsCancellationRequested) return;
+                _update = update;
+                _updateButton.Visible = update is not null;
+            }
+            catch (Exception) { /* Offline update checks must not prevent playing. */ }
+        };
         FormClosed += (_, _) => _closing.Cancel();
     }
     private async Task StartLaunch(bool vanilla)
@@ -97,6 +114,28 @@ internal sealed class LauncherForm : Form
             }
             finally { if (!IsDisposed) SetBusy(false); }
         }
+    private async Task InstallUpdate()
+    {
+        if (_busy || _update is null) return;
+        SetBusy(true);
+        try
+        {
+            Installation.RequireGameClosed();
+            ShowStatus("Downloading update...");
+            var path = await _update.Download(_closing.Token);
+            Installation.RequireGameClosed();
+            var start = new ProcessStartInfo(path) { UseShellExecute = true };
+            start.ArgumentList.Add("/DIR=" + _game.GameDirectory);
+            if (Process.Start(start) is null) throw new InvalidOperationException("Could not open the update installer.");
+            Close();
+        }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+        catch (Exception error)
+        {
+            if (!IsDisposed) { ShowStatus(""); MessageBox.Show(this, error.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+        finally { if (!IsDisposed) SetBusy(false); }
+    }
     private Button CreateButton(string text)
     {
         var button = new Button { Text = text, AutoSize = true, Padding = new Padding(8, 4, 8, 4) };

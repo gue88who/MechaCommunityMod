@@ -7,6 +7,16 @@ internal static class UiChecks
     [STAThread]
     private static int Main(string[] args)
     {
+        try { return Run(args); }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine("Launcher UI check failed: " + error);
+            return 1;
+        }
+    }
+
+    private static int Run(string[] args)
+    {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         var directory = args.Length > 0 ? Path.GetFullPath(args[0]) : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../output/launcher-review"));
@@ -16,7 +26,8 @@ internal static class UiChecks
         Directory.CreateDirectory(Path.Combine(fixture, "MechaCommunityMod"));
         File.WriteAllText(Path.Combine(fixture, "Mechabellum.exe"), "fixture");
         File.WriteAllText(Path.Combine(fixture, "GameAssembly.dll"), "fixture");
-        using var form = new LauncherForm(new Installation(fixture, () => { }));
+        using var form = new LauncherForm(new Installation(fixture, () => { }),
+            _ => Task.FromResult<ReleaseUpdate?>(new("v9.0.0", "MechaCommunityMod-9.0.0-Setup.exe")));
         // Create real child handles without displaying a window to the user.
         form.Opacity = 0; form.ShowInTaskbar = false;
         form.Show(); Application.DoEvents(); form.PerformLayout();
@@ -58,6 +69,9 @@ internal static class UiChecks
         if (bool.Parse(saved["LiveUnitStatistics/DamageDealt"]) != liveDamage.Checked
             || bool.Parse(saved["Statistics/DamageDealt"]) != previousPostDamage)
             throw new Exception("Checkbox changes were not saved immediately and independently.");
+        // Exercise layout with an available update as well as Defaults.
+        if (!actions.Controls.OfType<Button>().Single(b => b.Text == "Update available").Visible)
+            throw new Exception("Available launcher update was not shown.");
         foreach (TabPage page in tabs.TabPages)
         {
             tabs.SelectedTab = page; Application.DoEvents(); form.PerformLayout();
@@ -76,7 +90,7 @@ internal static class UiChecks
             throw new Exception("Plugin selection contains explanatory paragraphs or missing checkboxes.");
         if (pluginList.Controls.Cast<Control>().Any(c => c.Bottom > pluginList.ClientSize.Height))
             throw new Exception("Plugin checkboxes do not fit in the compact window.");
-        if (string.Join(",", actions.Controls.OfType<Button>().Where(b => b.Visible).Select(b => b.Text)) != "Uninstall,Play,Play vanilla")
+        if (string.Join(",", actions.Controls.OfType<Button>().Where(b => b.Visible).Select(b => b.Text)) != "Uninstall,Update available,Play,Play vanilla")
             throw new Exception("Unexpected primary launcher actions.");
         var buttons = layout.Controls.OfType<FlowLayoutPanel>().First();
         if (buttons.Controls.Cast<Control>().Where(c => c.Visible).Any(c => c.Right > buttons.ClientSize.Width)) throw new Exception("Action buttons do not fit.");
