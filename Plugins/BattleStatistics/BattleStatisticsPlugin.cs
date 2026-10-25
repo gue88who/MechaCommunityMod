@@ -15,7 +15,7 @@ namespace MechaCommunityMod.Plugins.BattleStatistics;
 public sealed class BattleStatisticsPlugin : BasePlugin
 {
     internal const string Id = "mecha.community.mod.battle-statistics";
-    internal const string Version = "0.9.100";
+    internal const string Version = ModIdentity.Version;
     internal static ManualLogSource Logger = null!;
     internal static ConfigEntry<bool> StartVisible = null!;
     internal static ConfigEntry<KeyCode> ToggleKey = null!;
@@ -28,23 +28,23 @@ public sealed class BattleStatisticsPlugin : BasePlugin
     public override void Load()
     {
         var compatibility = GameCompatibility.CheckInstalled(Paths.GameRootPath);
-        GameCompatibility.Activate(compatibility, LoadCompatible, message =>
+        GameCompatibility.Activate(compatibility, LoadMod, message =>
         {
             if (compatibility.Compatible) Log.LogInfo(message);
             else Log.LogWarning(message);
         });
     }
 
-    // Keep game-dependent initialization out of Load's JIT compilation until the check passes.
+    // Log the compatibility result before compiling game-dependent initialization.
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    private void LoadCompatible()
+    private void LoadMod()
     {
         Logger = Log;
         DefaultSettings.Migrate(Config);
         DefaultSettings.Load();
         BattleStatisticsFeatures.Bind(Config);
         StartVisible = Config.Bind("Display", "StartVisible", true, "Legacy startup preference, used only to initialize LiveOverlay.HideByDefault.");
-        ToggleKey = Config.Bind("Display", "ToggleKey", KeyCode.F8, "Hide/show both panels.");
+        ToggleKey = Config.Bind("Display", "ToggleKey", KeyCode.F8, "Shared overlay hotkey: press to toggle, or hold in on-demand mode.");
         MaxRows = Config.Bind("Display", "MaxRows", (int)DefaultSettings.Number("MaxRows", 8),
             new ConfigDescription("Maximum unit types per page, ordered by damage. Available HUD space may reduce this.", new AcceptableValueRange<int>(1, 16)));
         SpectatorMaxRows = Config.Bind("Display", "SpectatorMaxRows", (int)DefaultSettings.Number("SpectatorMaxRows", 16),
@@ -57,6 +57,8 @@ public sealed class BattleStatisticsPlugin : BasePlugin
             new ConfigDescription("Statistics refresh interval.", new AcceptableValueRange<float>(0.1f, 2f)));
         DisplaySettings.Bind(Config);
         LiveOverlaySettings.Bind(Config);
+        BeaconSelectionPreview.Bind(Config);
+        SentryMissilePreview.Bind(Config);
         RecordingHooks.Observer = AddComponent<BattleStatisticsBehaviour>();
         var recording = new Harmony(Id + ".recording");
         var installed = 0;
@@ -67,13 +69,17 @@ public sealed class BattleStatisticsPlugin : BasePlugin
         }
         Log.LogInfo($"Installed {installed} recording and contribution observation hooks.");
         OverkillHooks.Install();
-        Log.LogInfo($"Battle Statistics {Version} loaded. F8 toggles side panels; Stats opens the sortable table; Settings controls saved column visibility.");
+        Log.LogInfo($"Battle Statistics {Version} loaded. Overlay settings choose battle/deployment layouts and {ToggleKey.Value} toggle or hold visibility; Stats opens the sortable table.");
     }
 }
 
 public sealed class BattleStatisticsBehaviour : MonoBehaviour
 {
-    internal void RefreshSettings() => _refreshAt = 0;
+    internal void RefreshSettings()
+    {
+        _hotkeyCheckAt = 0;
+        _refreshAt = 0;
+    }
     private GameReader? _reader;
     private OverlayView? _view;
     private ResultsView? _results;
@@ -81,7 +87,12 @@ public sealed class BattleStatisticsBehaviour : MonoBehaviour
     private float _refreshAt;
     private float _logAt;
     private string? _status;
-    private bool _panelsVisible = !LiveOverlaySettings.HideByDefault.Value;
+    private bool _panelsVisible = true;
+    private bool _battleVisible = true;
+    private bool _deploymentVisible = true;
+    private bool? _lastBattlePhase;
+    private bool _hotkeyConflict;
+    private float _hotkeyCheckAt;
 
     public BattleStatisticsBehaviour(IntPtr pointer) : base(pointer) { }
 
@@ -91,9 +102,10 @@ public sealed class BattleStatisticsBehaviour : MonoBehaviour
         {
             if (!MatchSupport.Allowed)
             {
+                _view?.ClosePopups();
                 // Remove buttons, input shields and cached results as well as
                 // hiding F8. A previous 1v1 must not leak into another mode.
-                _view?.SetVisible(false);
+                _view?.SetVisible(false, immediate: true);
                 _results?.Dispose(); _results = null;
                 _unitStats?.Dispose(); _unitStats = null;
                 if (_reader is not null)
@@ -105,18 +117,30 @@ public sealed class BattleStatisticsBehaviour : MonoBehaviour
                 _status = null; _refreshAt = 0;
                 return;
             }
-            if (BattleStatisticsFeatures.LiveOverlay.Value && Input.GetKeyDown(BattleStatisticsPlugin.ToggleKey.Value))
+            var battle = MatchClient.Current?.IsInFightPhase() == true;
+            if (Time.unscaledTime >= _hotkeyCheckAt || _lastBattlePhase != battle)
             {
-                _panelsVisible = !_panelsVisible;
-                BattleStatisticsPlugin.Logger.LogInfo($"Battle Statistics {(_panelsVisible ? "shown" : "hidden")} via {BattleStatisticsPlugin.ToggleKey.Value}.");
-                _refreshAt = 0;
-                _view?.SetVisible(_panelsVisible && _results?.Visible != true);
+                _hotkeyCheckAt = Time.unscaledTime + .25f;
+                _hotkeyConflict = OverlayHotkey.Conflicts(BattleStatisticsPlugin.ToggleKey.Value);
             }
+            if (_lastBattlePhase != battle) { _lastBattlePhase = battle; _refreshAt = 0; }
+            var onDemand = battle ? LiveOverlaySettings.BattleOnDemand.Value : LiveOverlaySettings.DeploymentOnDemand.Value;
+            var wasVisible = _panelsVisible;
+            var hotkeyAllowed = OverlayTextInput.AllowsHotkey(BattleStatisticsPlugin.ToggleKey.Value)
+                && !OverlayHotkey.ModifiersHeld && !_hotkeyConflict;
+            if (BattleStatisticsFeatures.LiveOverlay.Value && hotkeyAllowed && !LiveOverlaySettingsView.BindingHotkey && !onDemand && Input.GetKeyDown(BattleStatisticsPlugin.ToggleKey.Value))
+            {
+                if (battle) _battleVisible = !_battleVisible;
+                else _deploymentVisible = !_deploymentVisible;
+            }
+            _panelsVisible = LiveOverlaySettingsView.BindingHotkey || (onDemand ? hotkeyAllowed && Input.GetKey(BattleStatisticsPlugin.ToggleKey.Value) : battle ? _battleVisible : _deploymentVisible);
+            if (wasVisible != _panelsVisible) _refreshAt = 0;
             if (Input.GetKeyDown(KeyCode.Escape) && _results?.Visible == true && _reader is not null)
                 _results.Dismiss();
             if (!BattleStatisticsFeatures.LiveOverlay.Value || !_panelsVisible || _results?.Visible == true)
             {
-                _view?.SetVisible(false);
+                if (!BattleStatisticsFeatures.LiveOverlay.Value || _results?.Visible == true) _view?.ClosePopups();
+                _view?.SetVisible(false, immediate: !BattleStatisticsFeatures.LiveOverlay.Value || _results?.Visible == true);
             }
             var now = Time.unscaledTime;
             if (now < _refreshAt)
@@ -146,16 +170,18 @@ public sealed class BattleStatisticsBehaviour : MonoBehaviour
             }
             if (snapshot is null || !BattleStatisticsFeatures.LiveOverlay.Value || !_panelsVisible || _results?.Visible == true)
             {
-                _view?.SetVisible(false);
+                if (snapshot is null) _view?.ClosePopups();
+                _view?.SetVisible(false, immediate: snapshot is null || !BattleStatisticsFeatures.LiveOverlay.Value || _results?.Visible == true);
                 return;
             }
             _view ??= new OverlayView();
-            _view.Refresh(snapshot, _reader);
+            _view.Refresh(snapshot, _reader, battle ? LiveOverlaySettings.BattleCentered.Value : LiveOverlaySettings.DeploymentCentered.Value,
+                onDemand ? $"Hold {BattleStatisticsPlugin.ToggleKey.Value}" : $"Press {BattleStatisticsPlugin.ToggleKey.Value}");
             _view.SetVisible(true);
         }
         catch (Exception exception)
         {
-            _view?.SetVisible(false);
+            _view?.SetVisible(false, immediate: true);
             _unitStats?.Close();
             // Loading a scene or a future incompatible game update should not
             // spam the log each frame or interfere with the game's update.
@@ -306,19 +332,25 @@ public sealed class BattleStatisticsBehaviour : MonoBehaviour
 
     private void LateUpdate()
     {
+        try { BeaconOutline.Render(); }
+        catch (Exception error)
+        { BeaconSelectionPreview.Clear(); SentryMissilePreview.Clear(); BattleStatisticsPlugin.Logger.LogWarning("Visual helper outline rendering failed: " + error.Message); }
         // Evaluate after native menu transitions, independently of the 4 Hz
         // statistics refresh, including the reinforcement panel's Show toggle.
         try
         {
-            if (!MatchSupport.Allowed) { _view?.SetVisible(false); return; }
+            if (!MatchSupport.Allowed) { _view?.SetVisible(false, immediate: true); return; }
             _view?.RefreshVisibility();
+            _view?.Animate(Time.unscaledDeltaTime);
             _unitStats?.RefreshVisibility(_results?.Visible == true);
         }
-        catch { _view?.SetVisible(false); _unitStats?.Close(); }
+        catch { _view?.SetVisible(false, immediate: true); _unitStats?.Close(); }
     }
 
     private void OnDestroy()
     {
+        BeaconSelectionPreview.Clear();
+        SentryMissilePreview.Clear();
         if (_reader is not null)
         {
             _reader.History.End(false);

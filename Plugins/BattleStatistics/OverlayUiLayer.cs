@@ -19,6 +19,7 @@ internal static class OverlayUiLayer
         GameObject? content = null;
         var layer = window.GetWindowType();
         var special = window.TryCast<InGameOptionWindow>() is not null || window.TryCast<BattleResultWindow>() is not null
+            || window.TryCast<ChooseAdvanceTeamWindow>() is not null || window.TryCast<ChooseAdvanceTeamWatchWindow>() is not null
             || window.TryCast<OptionWindow>() is not null || layer == GRUIManager.EWindowType.System_Loading;
         var reinforcement = false;
         var tooltip = window.TryCast<TooltipWindow>() is not null;

@@ -25,6 +25,7 @@ internal static class Program
         try
         {
             if (args.Length == 2 && args[0] == "--validate-defaults") { SettingsCatalog.ReadDefaults(args[1]); return 0; }
+            if (args.Length == 2 && args[0] == "--export-fairness") { FeatureFairness.Export(args[1]); return 0; }
             var game = new Installation(Path.Combine(AppContext.BaseDirectory, "..", ".."));
             game.Validate(args.FirstOrDefault() != "--uninstall-cleanup");
             if (args.Length > 0)

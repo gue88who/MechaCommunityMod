@@ -1,0 +1,14 @@
+Roboto Condensed Regular
+Font data copyright Google 2014
+Licensed under the Apache License, Version 2.0 (Roboto-LICENSE.txt).
+https://www.apache.org/licenses/LICENSE-2.0
+
+Xolonium Bold
+Copyright 2011-2016 Severin Meyer
+Licensed under the SIL Open Font License 1.1 (Xolonium-LICENSE.txt).
+https://sev.dev/fonts/xolonium/
+https://gitlab.com/sev/xolonium
+
+These copyright and license identifiers are preserved from the unmodified
+font files supplied with Mechabellum. The upstream Xolonium license also
+contains the author's current copyright notice.

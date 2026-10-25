@@ -1,10 +1,15 @@
 # Mecha Community Mod
 
-Adds three independently enabled features to Mechabellum:
+Adds independently enabled features to Mechabellum:
 
-- **Live battle stats**: an F8 overlay showing your armies' combat stats.
-- **Individual unit stats**: detailed stats for the selected unit or squad.
-- **Post-game stats**: a match report with round history and damage breakdowns.
+- **Live battle stats:** an overlay showing your armies' combat stats.
+- **Individual unit stats:** detailed stats for the selected unit or squad.
+- **Post-game stats:** a match report with round history and damage breakdowns.
+- **Beacon selection preview:** highlights units affected before placement.
+- **Sentry missile range preview:** highlights targets within the missile's range.
+
+Both targeting previews are disabled by default. The launcher's **Fair play** guide
+explains each feature's competitive impact. Follow developer and event rules.
 
 ## Install
 
@@ -14,27 +19,35 @@ Adds three independently enabled features to Mechabellum:
 
 Everything required is bundled. The first game start may take longer.
 
-**Supported:** Windows x64, Mechabellum **2.0.0.3.2328** (Steam build **25626184**).
-**Play vanilla** is always available in the launcher. The stats mod disables itself on unsupported builds. The launcher's **Play vanilla** also disables the loader for that launch.
+**Supported:** Windows x64, Mechabellum **2.0.0.5.2340** (Steam build **26153644**).
+Untested game builds show a warning with **Play with mod**, **Play vanilla**, and
+**Go back** choices. Features may not work correctly on untested builds.
 
 ## Controls
 
-- **F8:** show or hide the live battle overlay.
+- **F8 (default):** toggle or hold to show the overlay; configure the key in Settings.
+- **Overlay Settings:** choose sidebars or a centered scoreboard and visibility mode separately for battle and deployment.
 - **Selected-unit Stats button:** open unit stats, above the camera button.
 - **Stats on the results screen:** open the match report.
 - **Settings:** choose the stats shown. **?** explains them.
 
-In-game display changes save and apply immediately. Launcher changes apply next game launch; **Hide by default** controls startup visibility.
+In-game display changes save and apply immediately. Launcher changes apply next
+game launch. Each feature has its own settings page and Defaults button.
 
-Play or watch replays from the beginning to capture the full match. Reports save automatically in `Mechabellum/ProjectDatas/Stats`. The mod does not change combat results.
+Play or watch replays from the beginning to capture the full match. Reports save
+automatically in `Mechabellum/ProjectDatas/Stats`. The mod does not change combat results.
 
 ## Update or uninstall
 
-Close the game before updating. Click **Update available** in the launcher or Setup to download, verify, and run the latest installer. You can also run a newer Setup directly. Your saved settings are kept.
+Close the game before updating. Click **Update available** in the launcher or Setup
+to download, verify, and run the latest installer. You can also run a newer Setup
+directly. Your saved settings are kept.
 
-Use **Uninstall** in the launcher or Windows Installed Apps to remove the mod. Game files and replays are kept. Saved reports are kept unless you choose to delete them.
+Use **Uninstall** in the launcher or Windows Installed Apps to remove the mod.
+Game files and replays are kept. Saved reports are kept unless you choose to delete them.
 
 ## Problems?
 
-Include your game version and a description of the problem in an [issue](https://github.com/gue88who/MechaCommunityMod/issues). Logs are in `BepInEx/LogOutput.log`; check them for personal information before sharing.
-
+Include your game version and a description of the problem in an
+[issue](https://github.com/gue88who/MechaCommunityMod/issues). Logs are in
+`BepInEx/LogOutput.log`; check them for personal information before sharing.

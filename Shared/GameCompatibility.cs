@@ -30,7 +30,7 @@ internal static class GameCompatibility
         }
         catch (Exception error)
         {
-            return new(false, $"Mecha Community Mod disabled: game compatibility could not be verified ({error.Message}).");
+            return new(false, $"Mecha Community Mod warning: game compatibility could not be verified ({error.Message}).");
         }
     }
 
@@ -39,8 +39,8 @@ internal static class GameCompatibility
         var build = Regex.Match(manifest, "\"buildid\"\\s+\"([0-9]+)\"", RegexOptions.IgnoreCase);
         return build.Success && build.Groups[1].Value == target.SteamBuildId
             ? new(true, "Steam build verified.")
-            : new(false, $"Mecha Community Mod disabled: expected Steam build {target.SteamBuildId}, "
-                + "but the installed Steam build is different or cannot be verified. Wait for a newer Mecha Community Mod build.");
+            : new(false, $"Mecha Community Mod warning: tested with Steam build {target.SteamBuildId}, "
+                + "but the installed Steam build is different or cannot be verified. This game build has not been tested.");
     }
 
     internal static CompatibilityResult Check(string gameRoot, TargetBuild? target)
@@ -48,7 +48,7 @@ internal static class GameCompatibility
         if (target is null || target.SchemaVersion != 1 || string.IsNullOrWhiteSpace(target.GameVersion)
             || string.IsNullOrWhiteSpace(target.SteamBuildId)
             || !IsHash(target.GameAssemblySha256) || !IsHash(target.MetadataSha256))
-            return new(false, "Mecha Community Mod disabled: invalid compatibility manifest.");
+            return new(false, "Mecha Community Mod warning: invalid compatibility manifest.");
 
         var expected = $"Mechabellum {target.GameVersion} (Steam build {target.SteamBuildId})";
         try
@@ -60,21 +60,20 @@ internal static class GameCompatibility
                 using var algorithm = SHA256.Create();
                 var actual = Convert.ToHexString(algorithm.ComputeHash(stream));
                 if (!string.Equals(actual, hash, StringComparison.OrdinalIgnoreCase))
-                    return new(false, $"Mecha Community Mod disabled: unsupported game binaries. Expected {expected}; "
-                        + $"{relative} SHA-256 is {actual}. Wait for a newer Mecha Community Mod build targeting this game build.");
+                    return new(false, $"Mecha Community Mod warning: untested game binaries. Tested with {expected}; "
+                        + $"{relative} SHA-256 is {actual}. The mod may not work correctly with this game build.");
             }
             return new(true, $"Game compatibility verified: {expected}.");
         }
         catch (Exception error)
         {
-            return new(false, $"Mecha Community Mod disabled: expected {expected}, but game files could not be verified ({error.Message}).");
+            return new(false, $"Mecha Community Mod warning: tested with {expected}, but game files could not be verified ({error.Message}).");
         }
     }
 
     internal static bool Activate(CompatibilityResult result, Action load, Action<string> log)
     {
         log(result.Message);
-        if (!result.Compatible) return false;
         load();
         return true;
     }

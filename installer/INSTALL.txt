@@ -1,17 +1,44 @@
-﻿Mecha Community Mod
+Mecha Community Mod
 
 Open "Mecha Community Mod Launcher" in the game folder to choose features
 and stats. Settings save automatically; launcher changes apply next launch.
 Play starts the game through Steam. The first start may take longer.
 
-F8 toggles the live overlay. The selected-unit Stats button opens unit stats;
-Stats on the results screen opens the post-game report. Each view has Settings
-and ? help. In-game display changes apply immediately; Hide by default controls
-the next launch. Start replays from the beginning for full stats.
+FAIR PLAY
+Mods in Mechabellum are a polarizing topic. Some can give an unfair advantage.
+Do not use features that can give you an unfair advantage in ranked games,
+tournaments, or other competitive environments. Follow developer and event
+rules. These categories are our own descriptions, not official approval.
 
-Supported: Mechabellum 2.0.0.3.2328 (Steam build 25626184).
-The stats mod disables itself on unsupported builds. The launcher offers
-Play vanilla, which also disables the loader for that launch.
+Post-game analysis: reports and presentation without live assistance.
+Live information: statistics and analysis during a match. Use competitively
+only when the rules explicitly allow it.
+Targeting assistance: previews that help you choose targets before placement.
+Keep these features off in competitive play.
+
+Live overlay and individual stats show live information. Post-game stats review
+completed matches. Beacon and sentry missile highlighting provide targeting
+assistance and are disabled by default.
+Setup and the launcher show each feature's category. The launcher's Fair play guide
+explains the colors; FAIRNESS.txt includes the complete feature guide.
+Use a feature's gear button to edit its settings. Back or Escape returns to
+the list. Defaults restores only that feature's settings.
+An update preserves choices you previously saved, including explicit opt-ins.
+
+Press your configured hotkey to toggle the live overlay, or hold it in Hold
+mode. The hint shows "Press X" or "Hold X" with your chosen key. Typing in
+chat or another text input does not activate the overlay hotkey.
+The selected-unit Stats button opens unit stats;
+Stats on the results screen opens the post-game report. Each view has Settings
+and ? help. In-game display changes apply immediately. Battle and deployment
+have independent layout and visibility settings. Start replays from the
+beginning for full stats.
+
+Version: 0.9.105.
+Supported: Mechabellum 2.0.0.5.2340 (Steam build 26153644).
+Untested game builds show a warning when you click Play. Choose Play with mod
+to continue, Play vanilla to disable the loader for that launch, or Go back
+to return to the launcher. Version mismatches do not disable the stats mod.
 
 Update: close the game and launcher, then run the new installer.
 Setup offers Update available when a newer public release exists. It downloads

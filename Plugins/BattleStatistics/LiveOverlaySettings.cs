@@ -5,6 +5,7 @@ namespace MechaCommunityMod.Plugins.BattleStatistics;
 // Live and table settings use independent defaults and saved entries.
 internal static class LiveOverlaySettings
 {
+    internal static ConfigEntry<bool> BattleCentered = null!, BattleOnDemand = null!, DeploymentCentered = null!, DeploymentOnDemand = null!;
     internal static ConfigEntry<bool> HideByDefault = null!, Damage = null!, Tanked = null!, Kills = null!,
         DamageOverkill = null!, TankedOverkill = null!, Hacked = null!, HackAmount = null!, FailedHack = null!,
         SourceColors = null!, XpGained = null!, XpFed = null!;
@@ -13,7 +14,11 @@ internal static class LiveOverlaySettings
     {
         config.SaveOnConfigSet = true;
         ConfigEntry<bool> Entry(string name, string description, bool initial) => config.Bind("LiveOverlay", name, DefaultSettings.Bool("LiveOverlay", name, initial), description);
-        HideByDefault = Entry("HideByDefault", "Start with the F8 panels hidden on the next game launch. F8 still toggles them during play.", !BattleStatisticsPlugin.StartVisible.Value);
+        HideByDefault = Entry("HideByDefault", "Hide both phases in toggle mode by default. Changes apply immediately; hold-to-show modes are unaffected.", !BattleStatisticsPlugin.StartVisible.Value);
+        BattleCentered = Entry("BattleCentered", "Battle layout: enabled uses a centered scoreboard; disabled uses sidebars.", false);
+        BattleOnDemand = Entry("BattleOnDemand", "Battle visibility: enabled shows only while holding the overlay hotkey; disabled starts visible and toggles with that key.", false);
+        DeploymentCentered = Entry("DeploymentCentered", "Deployment layout: enabled uses a centered scoreboard; disabled uses sidebars.", true);
+        DeploymentOnDemand = Entry("DeploymentOnDemand", "Deployment visibility: enabled shows only while holding the overlay hotkey; disabled starts visible and toggles with that key.", true);
         Damage = Entry("Damage", "Show the damage dealt bar in the F8 panels.", true);
         Tanked = Entry("Tanked", "Show the damage received bar in the F8 panels.", true);
         Kills = Entry("Kills", "Show kills and spell uses in the F8 panels.", true);

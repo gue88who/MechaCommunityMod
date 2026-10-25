@@ -24,6 +24,7 @@ WizardStyle=modern
 UninstallFilesDir={app}\MechaCommunityMod\setup
 UninstallDisplayName=Mecha Community Mod
 LicenseFile={#BuildRoot}\payload\LICENSE.txt
+InfoBeforeFile={#BuildRoot}\payload\FAIRNESS.txt
 InfoAfterFile={#BuildRoot}\payload\INSTALL.txt
 CloseApplications=no
 RestartApplications=no
@@ -37,6 +38,7 @@ Source: "{#BuildRoot}\loader\*"; DestDir: "{app}"; Flags: ignoreversion recurses
 Source: "{#BuildRoot}\payload\MechaCommunityMod.BattleStatistics.dll"; DestDir: "{app}\BepInEx\plugins\MechaCommunityMod\BattleStatistics"; Flags: ignoreversion
 Source: "{#BuildRoot}\payload\LICENSE.txt"; DestDir: "{app}\BepInEx\plugins\MechaCommunityMod\BattleStatistics"; Flags: ignoreversion
 Source: "{#BuildRoot}\payload\INSTALL.txt"; DestDir: "{app}\BepInEx\plugins\MechaCommunityMod\BattleStatistics"; Flags: ignoreversion
+Source: "{#BuildRoot}\payload\FAIRNESS.txt"; DestDir: "{app}\MechaCommunityMod"; Flags: ignoreversion
 Source: "{#BuildRoot}\launcher\*"; DestDir: "{app}\MechaCommunityMod\Launcher"; Flags: ignoreversion recursesubdirs
 Source: "{#BuildRoot}\payload\default-settings.json"; DestDir: "{app}\MechaCommunityMod"; Flags: ignoreversion
 Source: "{#BuildRoot}\payload\manifest.json"; DestDir: "{app}\MechaCommunityMod"; Flags: ignoreversion
@@ -65,6 +67,7 @@ var
   LastFeaturesDirectory: String;
 
 #include "UpdateCheck.iss"
+#include "ProcessCheck.iss"
 
 function InitializeSetup: Boolean;
 begin
@@ -76,29 +79,55 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  Legend: TNewStaticText;
+  I: Integer;
 begin
-  FeaturesPage := CreateInputOptionPage(wpSelectDir, 'Battle Statistics plugin',
-    'Choose which features appear in Mechabellum.', 'You can change these choices later in the launcher.', False, False);
-  FeaturesPage.Add('Live battle stats overlay (F8)');
-  FeaturesPage.Add('Live individual unit stats');
-  FeaturesPage.Add('Post-game stats');
+  for I := 0 to 2 do begin
+    Legend := TNewStaticText.Create(WizardForm);
+    Legend.Parent := WizardForm.InfoBeforeMemo.Parent;
+    Legend.Left := WizardForm.InfoBeforeMemo.Left + I * (WizardForm.InfoBeforeMemo.Width div 3);
+    Legend.Top := WizardForm.InfoBeforeMemo.Top;
+    Legend.Font.Style := [fsBold];
+    if I = 0 then begin Legend.Caption := '{#RatingGREEN}'; Legend.Font.Color := {#RatingColorGREEN}; end;
+    if I = 1 then begin Legend.Caption := '{#RatingYELLOW}'; Legend.Font.Color := {#RatingColorYELLOW}; end;
+    if I = 2 then begin Legend.Caption := '{#RatingRED}'; Legend.Font.Color := {#RatingColorRED}; end;
+  end;
+  WizardForm.InfoBeforeMemo.Top := WizardForm.InfoBeforeMemo.Top + ScaleY(24);
+  WizardForm.InfoBeforeMemo.Height := WizardForm.InfoBeforeMemo.Height - ScaleY(24);
+  FeaturesPage := CreateInputOptionPage(wpSelectDir, 'Mecha Community Mod features',
+    'Choose which features appear in Mechabellum.', 'Targeting assistance can give an unfair advantage; keep it off in competitive play. Visual helpers are off by default. Saved choices are preserved on updates.', False, False);
+  FeaturesPage.Add('{#CaptionLiveOverlay}');
+  FeaturesPage.Add('{#CaptionIndividualStats}');
+  FeaturesPage.Add('{#CaptionPostGameStats}');
+  FeaturesPage.Add('{#CaptionBeaconSelectionPreview}');
+  FeaturesPage.Add('{#CaptionSentryMissilePreview}');
   FeaturesPage.Values[0] := '{#DefaultLiveOverlay}' = 'true';
   FeaturesPage.Values[1] := '{#DefaultIndividualStats}' = 'true';
   FeaturesPage.Values[2] := '{#DefaultPostGameStats}' = 'true';
+  FeaturesPage.Values[3] := '{#DefaultBeaconSelectionPreview}' = 'true';
+  FeaturesPage.Values[4] := '{#DefaultSentryMissilePreview}' = 'true';
   InitializeUpdateCheck;
 end;
 
-procedure CurPageChanged(CurPageID: Integer);
+procedure LoadFeatureChoices;
 var Config: String;
 begin
-  if (CurPageID = FeaturesPage.ID) and (LastFeaturesDirectory <> WizardDirValue) then begin
+  if LastFeaturesDirectory <> WizardDirValue then begin
     LastFeaturesDirectory := WizardDirValue;
     Config := AddBackslash(WizardDirValue) + 'BepInEx\config\mecha.community.mod.battle-statistics.cfg';
     if not FileExists(Config) then Config := AddBackslash(WizardDirValue) + 'BepInEx\config\tools.replay.damage-overlay.cfg';
     FeaturesPage.Values[0] := CompareText(GetIniString('Features', 'LiveOverlay', '{#DefaultLiveOverlay}', Config), 'true') = 0;
     FeaturesPage.Values[1] := CompareText(GetIniString('Features', 'IndividualStats', '{#DefaultIndividualStats}', Config), 'true') = 0;
     FeaturesPage.Values[2] := CompareText(GetIniString('Features', 'PostGameStats', '{#DefaultPostGameStats}', Config), 'true') = 0;
+    FeaturesPage.Values[3] := CompareText(GetIniString('Features', 'BeaconSelectionPreview', '{#DefaultBeaconSelectionPreview}', Config), 'true') = 0;
+    FeaturesPage.Values[4] := CompareText(GetIniString('Features', 'SentryMissilePreview', '{#DefaultSentryMissilePreview}', Config), 'true') = 0;
   end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = FeaturesPage.ID then LoadFeatureChoices;
 end;
 
 function NeedsLoader: Boolean;
@@ -151,21 +180,6 @@ begin
       Candidate := AddBackslash(QuotedValue(Lines[I])) + 'steamapps\common\Mechabellum';
       if GameExists(Candidate) then begin Result := Candidate; Exit; end;
     end;
-end;
-
-function ProcessCheck: String;
-var
-  Locator, Services, Processes: Variant;
-begin
-  Result := '';
-  try
-    Locator := CreateOleObject('WbemScripting.SWbemLocator');
-    Services := Locator.ConnectServer('', 'root\cimv2');
-    Processes := Services.ExecQuery('SELECT ProcessId FROM Win32_Process WHERE Name = ''Mechabellum.exe''');
-    if Processes.Count > 0 then Result := 'Close Mechabellum before installing or uninstalling Mecha Community Mod.';
-  except
-    Result := 'Setup could not check whether Mechabellum is running. Please close the game and retry after Windows Management Instrumentation is available.';
-  end;
 end;
 
 function FileMatches(const Directory, RelativePath, ExpectedHash: String): Boolean;
@@ -240,9 +254,10 @@ begin
   if CurStep <> ssPostInstall then Exit;
   Config := ExpandConstant('{app}\BepInEx\config\mecha.community.mod.battle-statistics.cfg');
   ForceDirectories(ExtractFileDir(Config));
-  SetArrayLength(Names, 3);
+  SetArrayLength(Names, 5);
   Names[0] := 'LiveOverlay'; Names[1] := 'IndividualStats'; Names[2] := 'PostGameStats';
-  for I := 0 to 2 do
+  Names[3] := 'BeaconSelectionPreview'; Names[4] := 'SentryMissilePreview';
+  for I := 0 to 4 do
     if FeaturesPage.Values[I] then SetIniString('Features', Names[I], 'true', Config)
     else SetIniString('Features', Names[I], 'false', Config);
   Parameters := '--initialize';
@@ -277,6 +292,8 @@ end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
+  { Silent upgrades also preserve explicit feature choices. }
+  if WizardSilent then LoadFeatureChoices;
   Result := ProcessCheck;
   if Result = '' then Result := ValidateDirectory(WizardDirValue);
 end;

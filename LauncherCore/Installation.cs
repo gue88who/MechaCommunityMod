@@ -13,7 +13,9 @@ internal sealed class Installation
     internal string DefaultsPath => Path.Combine(ModDirectory, "default-settings.json");
     internal string Uninstaller => Path.Combine(ModDirectory, "setup", "unins000.exe");
     internal Installation(string directory, Action? requireClosed = null)
-    { GameDirectory = Path.GetFullPath(directory); _requireClosed = requireClosed ?? RequireGameClosed; }
+    {
+        GameDirectory = Path.GetFullPath(directory); _requireClosed = requireClosed ?? RequireGameClosed;
+    }
     internal void Validate(bool requireGameFiles = true)
     {
         if (requireGameFiles && (!File.Exists(Path.Combine(GameDirectory, "Mechabellum.exe"))
@@ -151,7 +153,8 @@ internal sealed class Installation
     internal void Cleanup(bool removeStats)
     {
         Validate(false); _requireClosed();
-        if (CanRemoveLoader())
+        var removeLoader = CanRemoveLoader();
+        if (removeLoader)
         {
             DeleteDirectory("BepInEx"); DeleteDirectory("dotnet");
             foreach (var name in new[] { "winhttp.dll", "doorstop_config.ini", ".doorstop_version" }) DeleteFile(name);

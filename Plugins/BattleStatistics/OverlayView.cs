@@ -12,6 +12,9 @@ internal sealed class OverlayView : IDisposable
     private readonly GameObject _root;
     private readonly CanvasScaler _scaler;
     private readonly Canvas _canvas;
+    private readonly RectTransform _panels;
+    private readonly CanvasGroup _panelVisibility;
+    private readonly OverlayMotion _fade = new();
     private readonly Font _font;
     private readonly ResultsSkin _skin = new();
     private readonly StatsHelpView _help = new(live: true);
@@ -20,6 +23,9 @@ internal sealed class OverlayView : IDisposable
     private SidePanel _left;
     private SidePanel _right;
     private bool _spectating;
+    private bool _centered;
+    private RectTransform? _scoreboard;
+    private Text? _scoreboardHint;
     private bool _visible;
     private string? _lastBlocker;
     private readonly SideHudSpace _sideHud = new();
@@ -42,12 +48,19 @@ internal sealed class OverlayView : IDisposable
             _scaler.matchWidthOrHeight = 1;
             _skin.Load();
             _font = _skin.Body ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _left = new SidePanel(_root.transform, false, Blue, _font, 246, _skin, ToggleHelp, ToggleSettings);
-            _right = new SidePanel(_root.transform, true, Red, _font, 246, _skin, ToggleHelp, ToggleSettings);
+            _panels = Rect(_root.transform, "BattleOverlayPanels", 0, 0, 0, 0);
+            _panels.anchorMin = Vector2.zero;
+            _panels.anchorMax = Vector2.one;
+            _panelVisibility = _panels.gameObject.AddComponent<CanvasGroup>();
+            _panelVisibility.alpha = 0;
+            _panelVisibility.interactable = _panelVisibility.blocksRaycasts = false;
+            _left = new SidePanel(_panels, false, Blue, _font, 246, _skin, ToggleHelp, ToggleSettings);
+            _right = new SidePanel(_panels, true, Red, _font, 246, _skin, ToggleHelp, ToggleSettings);
             _helpInput = Rect(_root.transform, "OverlayGuideInput", 0, 0, 0, 0);
             _helpInput.anchorMin = _helpInput.anchorMax = _helpInput.pivot = new Vector2(.5f, .5f);
             Paint(_helpInput, Color.clear).raycastTarget = true;
             _helpInput.gameObject.SetActive(false);
+            _root.SetActive(false);
         }
         catch
         {
@@ -56,15 +69,16 @@ internal sealed class OverlayView : IDisposable
         }
     }
 
-    internal void SetVisible(bool visible)
+    internal void SetVisible(bool visible, bool immediate = false)
     {
         _visible = visible;
+        if (immediate) _fade.Snap(visible ? 1 : 0);
         RefreshVisibility();
     }
 
     internal void RefreshVisibility()
     {
-        var show = _visible && !OverlayUiLayer.Obscured();
+        var blocked = OverlayUiLayer.Obscured();
         var blocker = _visible ? OverlayUiLayer.Blocker : null;
         if (blocker != _lastBlocker)
         {
@@ -72,24 +86,69 @@ internal sealed class OverlayView : IDisposable
                 : "Side overlay hidden by native UI: " + blocker);
             _lastBlocker = blocker;
         }
-        if (_root.activeSelf != show) _root.SetActive(show);
-        if (!show) ClosePopups();
-        else { _left.RefreshTooltipVisibility(_canvas); _right.RefreshTooltipVisibility(_canvas); }
+        if (blocked)
+        {
+            // Native menus take input immediately, even midway through a fade.
+            _fade.Snap(0);
+            ClosePopups();
+        }
+        else _fade.Target(_visible ? 1 : 0, _visible ? .16f : .10f);
+        ApplyVisibility(blocked);
+        if (!blocked && _panels.gameObject.activeSelf)
+        {
+            _left.RefreshTooltipVisibility(_canvas, true);
+            _right.RefreshTooltipVisibility(_canvas, true);
+        }
     }
 
-    internal void Refresh(OverlaySnapshot snapshot, GameReader reader)
+    private void ApplyVisibility(bool blocked = false)
+    {
+        var panels = !blocked && (_visible || _fade.Value > 0);
+        _panelVisibility.alpha = _fade.Value;
+        _panelVisibility.interactable = _panelVisibility.blocksRaycasts = panels && _visible && _fade.Value > 0;
+        _panels.gameObject.SetActive(panels);
+        var show = panels || (!blocked && (_settings.Open || _help.Open));
+        if (_root.activeSelf != show) _root.SetActive(show);
+        if (!show) ClosePopups();
+    }
+
+    internal void Animate(float seconds)
+    {
+        if (!_root.activeSelf) return;
+        if (_fade.Advance(seconds)) ApplyVisibility();
+        if (!_panels.gameObject.activeSelf) return;
+        _left.Animate(seconds);
+        _right.Animate(seconds);
+    }
+
+    internal void Refresh(OverlaySnapshot snapshot, GameReader reader, bool centered = false, string? visibilityHint = null)
     {
         using var timing = new SlowOperation("side panel rendering");
         var scale = BattleStatisticsPlugin.Scale.Value;
         var spectating = MatchClient.Current?.IsWatchMode() == true;
-        if (_spectating != spectating)
+        if (_spectating != spectating || _centered != centered)
         {
             _spectating = spectating;
+            _centered = centered;
             _left.Dispose();
             _right.Dispose();
-            var width = spectating ? 196 : 246;
-            _left = new SidePanel(_root.transform, false, Blue, _font, width, _skin, ToggleHelp, ToggleSettings);
-            _right = new SidePanel(_root.transform, true, Red, _font, width, _skin, ToggleHelp, ToggleSettings);
+            var panelWidth = centered ? 430 : spectating ? 196 : 246;
+            _left = new SidePanel(_panels, false, Blue, _font, panelWidth, _skin, ToggleHelp, ToggleSettings, centered);
+            _right = new SidePanel(_panels, true, Red, _font, panelWidth, _skin, ToggleHelp, ToggleSettings, centered);
+            if (_scoreboard != null) Object.Destroy(_scoreboard.gameObject);
+            _scoreboard = null;
+            if (centered)
+            {
+                _scoreboard = Rect(_panels, "Scoreboard", 0, 0, 892, 0);
+                _scoreboard.anchorMin = _scoreboard.anchorMax = new Vector2(.5f, 1);
+                _scoreboard.pivot = new Vector2(.5f, 1);
+                _scoreboard.SetAsFirstSibling();
+                Paint(_scoreboard, new Color(.035f, .045f, .075f, .96f));
+                _scoreboardHint = Label(_scoreboard, "Title", 16, 4, 650, 24, 16, _font, TextAnchor.MiddleLeft);
+                _left.HeaderButton(_scoreboard, 770, 80, "Settings", _skin, ToggleSettings);
+                _left.HeaderButton(_scoreboard, 858, 26, "?", _skin, ToggleHelp);
+                _left.AttachTo(_scoreboard); _right.AttachTo(_scoreboard);
+            }
             _helpInput.SetAsLastSibling();
         }
         OverlayUiLayer.Place(_canvas);
@@ -98,10 +157,30 @@ internal sealed class OverlayView : IDisposable
         // the edge until the actual lower HUD begins, independently per side.
         var bottom = (_spectating ? 940f : 900f) / scale;
         var top = Math.Clamp(BattleStatisticsPlugin.Top.Value, 100f, Math.Max(100f, bottom - 118f));
-        var layout = _sideHud.Layout(top, bottom, scale, _spectating, _spectating ? 196 : 246);
+        var width = centered ? 430 : _spectating ? 196 : 246;
+        var layout = centered ? default : _sideHud.Layout(top, bottom, scale, _spectating, width);
         var maxRows = _spectating ? BattleStatisticsPlugin.SpectatorMaxRows.Value : BattleStatisticsPlugin.MaxRows.Value;
-        _left.Refresh(snapshot.Left, top, layout.LeftBottom - top, layout.Left, reader, maxRows, snapshot.Available);
-        _right.Refresh(snapshot.Right, top, layout.RightBottom - top, layout.Right, reader, maxRows, snapshot.Available);
+        if (centered)
+        {
+            top = 160f / scale;
+            _left.Refresh(snapshot.Left, 32, 760f / scale, 8, reader, maxRows, snapshot.Available);
+            _right.Refresh(snapshot.Right, 32, 760f / scale, 8, reader, maxRows, snapshot.Available);
+            var height = Math.Max(_left.PanelHeight, _right.PanelHeight);
+            var screenWidth = Screen.width / Math.Max(.01f, _canvas.scaleFactor);
+            var fit = Math.Min(1f, Math.Max(.1f, (screenWidth - 24) / 892f));
+            var frameHeight = height + 40;
+            var centeredTop = Math.Max(12, (1080f / scale - frameHeight * fit) / 2);
+            _scoreboard!.localScale = new Vector3(fit, fit, 1);
+            _scoreboard.anchoredPosition = new Vector2(0, -centeredTop);
+            _scoreboard.sizeDelta = new Vector2(892, frameHeight);
+            _scoreboardHint!.text = "SCOREBOARD  ·  " + visibilityHint;
+        }
+        else
+        {
+            _left.Refresh(snapshot.Left, top, layout.LeftBottom - top, layout.Left, reader, maxRows, snapshot.Available);
+            _right.Refresh(snapshot.Right, top, layout.RightBottom - top, layout.Right, reader, maxRows, snapshot.Available);
+        }
+        _left.SetHint(visibilityHint); _right.SetHint(visibilityHint);
     }
 
     private static Rect HelpRect() => new((Screen.width - Math.Min(720, Screen.width - 24)) / 2f,
@@ -114,9 +193,9 @@ internal sealed class OverlayView : IDisposable
         _help.Toggle();
         SyncHelpInput();
     }
-    private static Rect SettingsRect() => new((Screen.width - Math.Min(416, Screen.width - 24)) / 2f,
+    private static Rect SettingsRect() => new((Screen.width - Math.Min(760, Screen.width - 24)) / 2f,
         (Screen.height - Math.Min(628, Screen.height - 24)) / 2f,
-        Math.Min(416, Screen.width - 24), Math.Min(628, Screen.height - 24));
+        Math.Min(760, Screen.width - 24), Math.Min(628, Screen.height - 24));
     private void ToggleSettings()
     {
         _help.Close(); _settings.Toggle(); SyncHelpInput();
@@ -129,7 +208,7 @@ internal sealed class OverlayView : IDisposable
     }
     internal void DrawPopup()
     {
-        if ((!_help.Open && !_settings.Open) || !_visible || !_root.activeSelf || OverlayUiLayer.Obscured()) return;
+        if ((!_help.Open && !_settings.Open) || !_root.activeSelf || OverlayUiLayer.Obscured()) return;
         var oldDepth = GUI.depth;
         try
         {
@@ -166,7 +245,7 @@ internal sealed class OverlayView : IDisposable
         private readonly Text _emptyState;
         private int _page, _pageCount;
 
-        internal SidePanel(Transform parent, bool right, Color accent, Font font, float width, ResultsSkin skin, Action help, Action settings)
+        internal SidePanel(Transform parent, bool right, Color accent, Font font, float width, ResultsSkin skin, Action help, Action settings, bool sharedHeader = false)
         {
             Width = width;
             _right = right;
@@ -181,8 +260,12 @@ internal sealed class OverlayView : IDisposable
             Paint(_edge, accent);
             _toggleHint = Label(_rect, "ToggleHint", 6, 4, Width - 106, 20, 12, font, TextAnchor.MiddleCenter);
             _toggleHint.color = new Color(0.65f, 0.71f, 0.8f);
-            HeaderButton(_rect, Width - 94, 60, "Settings", skin, settings);
-            HeaderButton(_rect, Width - 28, 22, "?", skin, help);
+            _toggleHint.enabled = !sharedHeader;
+            if (!sharedHeader)
+            {
+                HeaderButton(_rect, Width - 94, 60, "Settings", skin, settings);
+                HeaderButton(_rect, Width - 28, 22, "?", skin, help);
+            }
             _emptyState = Label(_rect, "WaitingForStats", 10, 30, Width - 20, 36, 13, font, TextAnchor.MiddleCenter);
             _emptyState.color = new Color(.74f, .8f, .9f);
             _emptyState.enabled = false;
@@ -193,7 +276,7 @@ internal sealed class OverlayView : IDisposable
             _pager.gameObject.SetActive(false);
         }
 
-        private void HeaderButton(Transform parent, float x, float width, string caption, ResultsSkin skin, Action action)
+        internal void HeaderButton(Transform parent, float x, float width, string caption, ResultsSkin skin, Action action)
         {
             var helpRect = Rect(parent, "Header" + caption, x, 3, width, 20);
             var helpArt = Paint(helpRect, Color.white);
@@ -212,13 +295,23 @@ internal sealed class OverlayView : IDisposable
         }
 
         internal void Dispose() => Object.Destroy(_rect.gameObject);
+        internal float PanelHeight => _rect.sizeDelta.y;
+        internal void AttachTo(Transform parent) => _rect.SetParent(parent, false);
+        internal void Place(float inset, float top) => _rect.anchoredPosition = new Vector2(_right ? -inset : inset, -top);
+        internal void SetHint(string? hint) { if (hint is not null) _toggleHint.text = hint; }
 
-        internal void RefreshTooltipVisibility(Canvas canvas)
+        internal void RefreshTooltipVisibility(Canvas canvas, bool panelsVisible)
         {
-            var visible = !OverlayUiLayer.TooltipOverlaps(OverlayUiLayer.ScreenBounds(_rect, canvas));
+            var visible = panelsVisible && !OverlayUiLayer.TooltipOverlaps(OverlayUiLayer.ScreenBounds(_rect, canvas));
             _visibility.alpha = visible ? 1 : 0;
             _visibility.interactable = visible;
             _visibility.blocksRaycasts = visible;
+        }
+
+        internal void Animate(float seconds)
+        {
+            if (!_rect.gameObject.activeInHierarchy || _visibility.alpha == 0) return;
+            foreach (var row in _rows) row.Animate(seconds);
         }
 
         private void PageButton(Transform parent, float x, string caption, Action click)
@@ -235,13 +328,13 @@ internal sealed class OverlayView : IDisposable
         internal void Refresh(TeamStats stats, float top, float room, float inset, GameReader reader, int maxRows, bool available)
         {
             // Include every unit type, even rows hidden by the display limit.
-            var dealtTotal = stats.TotalDealt;
-            var takenTotal = stats.TotalDamageTaken;
+            var dealtTotal = LiveOverlaySettings.DamageOverkill.Value ? stats.TotalDealt : stats.Rows.Sum(r => r.Damage);
+            var takenTotal = LiveOverlaySettings.TankedOverkill.Value ? stats.TotalDamageTaken : stats.Rows.Sum(r => r.DamageTaken - r.Overkill);
             // Compare both hacking outcomes on one scale, across every page.
             // Active progress is still pending, never shown as a failed attempt.
             var hackTotal = stats.Rows.Sum(r => (double)Math.Max(0, r.Hacking.Successful) + Math.Max(0, r.Hacking.Failed));
             _rect.anchoredPosition = new Vector2(_right ? -inset : inset, -top);
-            _toggleHint.text = $"{BattleStatisticsPlugin.ToggleKey.Value} to hide";
+            _toggleHint.text = $"Press {BattleStatisticsPlugin.ToggleKey.Value}";
             var pages = new List<(int Start, int Count, float Height)>();
             for (var start = 0; start < stats.Rows.Length;)
             {
@@ -316,6 +409,15 @@ internal sealed class OverlayView : IDisposable
             private readonly RectTransform _hackSuccessTrack, _hackSuccessBar, _hackFailedTrack, _hackFailedBar;
             private readonly Text _name, _xp;
             private string? _portraitName;
+            private readonly OverlayMotion[] _widths = Enumerable.Range(0, 14).Select(_ => new OverlayMotion()).ToArray();
+            private readonly RectTransform[] _bars;
+            private readonly float[] _appliedWidths = new float[14];
+            private readonly float[] _appliedOffsets = new float[8];
+            private readonly bool[] _barEnabled = new bool[14];
+            private UnitKey? _unit;
+            private string? _displayName;
+            private long _lastDamage, _lastTaken;
+            private bool _splitDealt, _splitTaken, _sourceColors;
 
             internal RowView(Transform parent, int index, bool right, Color accent, Font font, float width)
             {
@@ -390,9 +492,15 @@ internal sealed class OverlayView : IDisposable
                     DamagePalette.FailedHack);
                 _name = Label(_root, "SquadName", 0, RowHeight, Width - 12, 17, 13, font, TextAnchor.MiddleLeft);
                 _xp = Label(_root, "Experience", 0, RowHeight + 18, Width - 12, 36, 13, font, TextAnchor.MiddleLeft);
+                _bars = new[] { _bar, _dealtOverkillBar, _takenBar, _overkillBar }
+                    .Concat(_dealtParts).Concat(_takenParts).Concat(new[] { _hackSuccessBar, _hackFailedBar }).ToArray();
             }
 
-            internal void SetVisible(bool visible) => _root.gameObject.SetActive(visible);
+            internal void SetVisible(bool visible)
+            {
+                if (!visible) _unit = null;
+                _root.gameObject.SetActive(visible);
+            }
             internal void Position(float y, float height)
             {
                 _root.anchoredPosition = new Vector2(6, -y);
@@ -420,8 +528,18 @@ internal sealed class OverlayView : IDisposable
             {
                 var splitDealt = LiveOverlaySettings.DamageOverkill.Value;
                 var splitTaken = LiveOverlaySettings.TankedOverkill.Value;
-                var dealt = row.TotalDealt;
-                var taken = row.DamageTaken;
+                // Pooled slots can switch units after sorting/paging; never morph
+                // another unit's bars into this one. Rewinds also snap to truth.
+                var snap = _unit != row.Unit || _displayName != row.DisplayName
+                    || row.TotalDealt < _lastDamage || row.DamageTaken < _lastTaken
+                    || _splitDealt != splitDealt || _splitTaken != splitTaken
+                    || _sourceColors != LiveOverlaySettings.SourceColors.Value;
+                _unit = row.Unit; _displayName = row.DisplayName;
+                _lastDamage = row.TotalDealt; _lastTaken = row.DamageTaken;
+                _splitDealt = splitDealt; _splitTaken = splitTaken;
+                _sourceColors = LiveOverlaySettings.SourceColors.Value;
+                var dealt = splitDealt ? row.TotalDealt : row.Damage;
+                var taken = splitTaken ? row.DamageTaken : row.DamageTaken - row.Overkill;
                 _damage.transform.parent.gameObject.SetActive(LiveOverlaySettings.Damage.Value);
                 _taken.transform.parent.gameObject.SetActive(LiveOverlaySettings.Tanked.Value);
                 var showHacked = LiveOverlaySettings.Hacked.Value && HasHacking(row);
@@ -431,12 +549,12 @@ internal sealed class OverlayView : IDisposable
                 _kills.text = LiveOverlaySettings.Kills.Value ? $"\u00d7 {Number(row.Kills)}" : "";
                 if (LiveOverlaySettings.Kills.Value && row.Unit.Kind == 100 + (int)DamageCategory.Spell) _kills.text += $"   Uses {Number(row.Casts)}";
                 if (showHacked) _kills.text += (_kills.text.Length > 0 ? "   " : "") + $"Hacked {Number(row.Hacking.Converted)}";
-                _bar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(dealt, dealtTotal), BarHeight);
-                _dealtOverkillBar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(row.DealtOverkill, dealtTotal), BarHeight);
-                _takenBar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(taken, takenTotal), BarHeight);
-                _overkillBar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(row.Overkill, takenTotal), BarHeight);
-                RefreshSources(_dealtParts, row.Sources(true), dealtTotal, BarHeight, splitDealt);
-                RefreshSources(_takenParts, row.Sources(false), takenTotal, BarHeight, splitTaken);
+                WidthTarget(0, BarWidth * DamageModel.BarFraction(dealt, dealtTotal), snap);
+                WidthTarget(1, BarWidth * DamageModel.BarFraction(row.DealtOverkill, dealtTotal), snap);
+                WidthTarget(2, BarWidth * DamageModel.BarFraction(taken, takenTotal), snap);
+                WidthTarget(3, BarWidth * DamageModel.BarFraction(row.Overkill, takenTotal), snap);
+                RefreshSources(4, row.Sources(true), dealtTotal, snap);
+                RefreshSources(8, row.Sources(false), takenTotal, snap);
                 _dealtOverkillBar.gameObject.SetActive(splitDealt);
                 _overkillBar.gameObject.SetActive(splitTaken);
                 foreach (var part in _dealtParts.Concat(_takenParts)) part.gameObject.SetActive(LiveOverlaySettings.SourceColors.Value);
@@ -457,8 +575,20 @@ internal sealed class OverlayView : IDisposable
                 _hackSuccessTrack.anchoredPosition = new Vector2(textX, -y);
                 if (showHackAmount) y += 22;
                 _hackFailedTrack.anchoredPosition = new Vector2(textX, -y);
-                _hackSuccessBar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(row.Hacking.Successful, hackTotal), BarHeight);
-                _hackFailedBar.sizeDelta = new Vector2(BarWidth * DamageModel.BarFraction(row.Hacking.Failed, hackTotal), BarHeight);
+                WidthTarget(12, BarWidth * DamageModel.BarFraction(row.Hacking.Successful, hackTotal), snap);
+                WidthTarget(13, BarWidth * DamageModel.BarFraction(row.Hacking.Failed, hackTotal), snap);
+                _barEnabled[0] = LiveOverlaySettings.Damage.Value;
+                _barEnabled[1] = _barEnabled[0] && splitDealt;
+                _barEnabled[2] = LiveOverlaySettings.Tanked.Value;
+                _barEnabled[3] = _barEnabled[2] && splitTaken;
+                for (var category = 0; category < 4; category++)
+                {
+                    _barEnabled[4 + category] = _barEnabled[0] && _sourceColors;
+                    _barEnabled[8 + category] = _barEnabled[2] && _sourceColors;
+                }
+                _barEnabled[12] = showHackAmount;
+                _barEnabled[13] = showFailedHack;
+                ApplyWidths();
                 _hackSuccess.text = "Hack amount " + (row.Hacking.Successful > 0 ? Compact(row.Hacking.Successful) : "-");
                 _hackFailed.text = "Failed hack " + (row.Hacking.Failed > 0 ? Compact(row.Hacking.Failed) : "-");
                 // Match UnitIconMini.RefreshSmallPortrait: the setting name needs
@@ -493,7 +623,7 @@ internal sealed class OverlayView : IDisposable
                 var width = separate ? (available - 16) / 2 : available;
                 main.rectTransform.anchoredPosition = new Vector2(5, 0);
                 main.rectTransform.sizeDelta = new Vector2(width, main.rectTransform.sizeDelta.y);
-                main.text = Compact(split ? effective : effective + overkill);
+                main.text = Compact(effective);
                 excess.enabled = separate;
                 excess.rectTransform.anchoredPosition = new Vector2(5 + available - width, 0);
                 excess.rectTransform.sizeDelta = new Vector2(width, excess.rectTransform.sizeDelta.y);
@@ -511,16 +641,53 @@ internal sealed class OverlayView : IDisposable
                 return part;
             }
 
-            private void RefreshSources(RectTransform[] parts, SourceDamage[] sources, long total, float height, bool splitOverkill)
+            private void WidthTarget(int index, float width, bool snap)
             {
-                float offset = 0;
-                for (var category = 0; category < parts.Length; category++)
+                if (snap) _widths[index].Snap(width);
+                else _widths[index].Target(width, .18f);
+            }
+
+            internal void Animate(float seconds)
+            {
+                if (!_root.gameObject.activeSelf) return;
+                var changed = false;
+                foreach (var width in _widths) changed |= width.Advance(seconds);
+                if (changed) ApplyWidths();
+            }
+
+            private void ApplyWidths()
+            {
+                for (var i = 0; i < _bars.Length; i++)
                 {
-                    var amount = sources.Where(s => (int)s.Source.Category == category).Sum(s => s.Damage + (splitOverkill ? 0 : s.Overkill));
+                    // Avoid native calls for hidden or settled fills. The tween
+                    // itself is managed and does not allocate per frame.
+                    if (!_barEnabled[i] || _appliedWidths[i] == _widths[i].Value) continue;
+                    _appliedWidths[i] = _widths[i].Value;
+                    _bars[i].sizeDelta = new Vector2(_widths[i].Value, BarHeight);
+                }
+                for (var first = 4; first <= 8; first += 4)
+                {
+                    if (!_barEnabled[first]) continue;
+                    float offset = 0;
+                    for (var i = first; i < first + 4; i++)
+                    {
+                        if (_appliedOffsets[i - 4] != offset)
+                        {
+                            _appliedOffsets[i - 4] = offset;
+                            _bars[i].anchoredPosition = new Vector2(_right ? -offset : offset, 0);
+                        }
+                        offset += _widths[i].Value;
+                    }
+                }
+            }
+
+            private void RefreshSources(int first, SourceDamage[] sources, long total, bool snap)
+            {
+                for (var category = 0; category < 4; category++)
+                {
+                    var amount = sources.Where(s => (int)s.Source.Category == category).Sum(s => s.Damage);
                     var width = BarWidth * DamageModel.BarFraction(amount, total);
-                    parts[category].anchoredPosition = new Vector2(_right ? -offset : offset, 0);
-                    parts[category].sizeDelta = new Vector2(width, height);
-                    offset += width;
+                    WidthTarget(first + category, width, snap);
                 }
             }
         }

@@ -12,13 +12,7 @@ output/
 .env.*
 *.pfx
 *.key
-# Publish only our plugin, never proprietary game bindings or loader dependencies.
 *.dll
-!dist/
-!dist/MechaCommunityMod.BattleStatistics.dll
-dist/*
-!dist/MechaCommunityMod.BattleStatistics.dll
-!dist/MechaCommunityMod.BattleStatistics.dll.sha256
 GameAssembly.dll
 global-metadata.dat
 *.mechstats

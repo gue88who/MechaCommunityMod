@@ -6,6 +6,8 @@
     <AssemblyName>MechaCommunityMod.Configuration</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Shared/FeatureFairness.cs" Link="FeatureFairness.cs" />
+    <Compile Include="../Shared/OverlayKeyPolicy.cs" Link="OverlayKeyPolicy.cs" />
     <Compile Include="../Shared/IniDocument.cs" Link="IniDocument.cs" />
     <Compile Include="../Shared/TableSettingsMigration.cs" Link="TableSettingsMigration.cs" />
     <Compile Include="../Shared/SettingsCatalog.cs" Link="SettingsCatalog.cs" />

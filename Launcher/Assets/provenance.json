@@ -1,0 +1,389 @@
+﻿[
+    {
+        "name":  "button_b_m1",
+        "file":  "assets/buttons/button_b_m1.png",
+        "category":  "buttons",
+        "width":  149,
+        "height":  38,
+        "logicalSize":  {
+                            "width":  149.0,
+                            "height":  38.0
+                        },
+        "border":  {
+                       "left":  54.0,
+                       "bottom":  0.0,
+                       "right":  54.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "4e21fda2567a79ab2b6ada0c4171cf2fadf30a144b06e8f2fcb990be2b147fc0",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  8744,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2074,
+                            "textureRectUnity":  {
+                                                     "x":  3353.0,
+                                                     "y":  703.0,
+                                                     "width":  149.0,
+                                                     "height":  38.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "button_b_m2",
+        "file":  "assets/buttons/button_b_m2.png",
+        "category":  "buttons",
+        "width":  149,
+        "height":  38,
+        "logicalSize":  {
+                            "width":  149.0,
+                            "height":  38.0
+                        },
+        "border":  {
+                       "left":  54.0,
+                       "bottom":  0.0,
+                       "right":  54.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "a3ac41aa40364c36199608239e6f52c39c924c37dd7837269db4c6c31f8d5e62",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  7817,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2074,
+                            "textureRectUnity":  {
+                                                     "x":  873.0,
+                                                     "y":  3179.0,
+                                                     "width":  149.0,
+                                                     "height":  38.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "button_y_m1",
+        "file":  "assets/buttons/button_y_m1.png",
+        "category":  "buttons",
+        "width":  149,
+        "height":  38,
+        "logicalSize":  {
+                            "width":  149.0,
+                            "height":  38.0
+                        },
+        "border":  {
+                       "left":  54.0,
+                       "bottom":  0.0,
+                       "right":  54.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "dacd1da9183aa14e70f358d10a88cfe117615e7e55873d8d21301680484caa2f",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  7757,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2074,
+                            "textureRectUnity":  {
+                                                     "x":  2747.0,
+                                                     "y":  2038.0,
+                                                     "width":  149.0,
+                                                     "height":  38.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "button_y_m2",
+        "file":  "assets/buttons/button_y_m2.png",
+        "category":  "buttons",
+        "width":  149,
+        "height":  38,
+        "logicalSize":  {
+                            "width":  149.0,
+                            "height":  38.0
+                        },
+        "border":  {
+                       "left":  54.0,
+                       "bottom":  0.0,
+                       "right":  54.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "d3862426c9b7f22c207b8ca34bbc22ddaa5e7df97c2b6f3a9caf7e03e1473a87",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  12574,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2074,
+                            "textureRectUnity":  {
+                                                     "x":  1355.0,
+                                                     "y":  2945.0,
+                                                     "width":  149.0,
+                                                     "height":  38.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "button_new_disable",
+        "file":  "assets/buttons/button_new_disable.png",
+        "category":  "buttons",
+        "width":  149,
+        "height":  38,
+        "logicalSize":  {
+                            "width":  149.0,
+                            "height":  38.0
+                        },
+        "border":  {
+                       "left":  10.0,
+                       "bottom":  0.0,
+                       "right":  10.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "d209cc62813f235bdebc8725530aff37ae2b96af48ebe07577241b5170fff4b5",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  10214,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2074,
+                            "textureRectUnity":  {
+                                                     "x":  1095.0,
+                                                     "y":  3104.0,
+                                                     "width":  149.0,
+                                                     "height":  38.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "panel_blue_70_with_corners",
+        "file":  "assets/panels-and-frames/panel_blue_70_with_corners.png",
+        "category":  "panels-and-frames",
+        "width":  120,
+        "height":  120,
+        "logicalSize":  {
+                            "width":  120.0,
+                            "height":  120.0
+                        },
+        "border":  {
+                       "left":  10.0,
+                       "bottom":  10.0,
+                       "right":  10.0,
+                       "top":  10.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "fe957d1cb54ea5a45253fb7031d3712fcf01e04d366eb70e9365f346566e2208",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  12080,
+                            "atlas":  "UI_Common Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2047,
+                            "textureRectUnity":  {
+                                                     "x":  3539.0,
+                                                     "y":  1058.0,
+                                                     "width":  120.0,
+                                                     "height":  120.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "replayUI_frame_2",
+        "file":  "assets/panels-and-frames/replayUI_frame_2.png",
+        "category":  "panels-and-frames",
+        "width":  234,
+        "height":  296,
+        "logicalSize":  {
+                            "width":  234.0,
+                            "height":  296.0
+                        },
+        "border":  {
+                       "left":  44.0,
+                       "bottom":  46.0,
+                       "right":  75.0,
+                       "top":  77.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  140.625,
+        "sha256":  "9b93279ac903d2cbc9370167a30433508fc5e476d9538fd897f0cf02eb52f7ca",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  6871,
+                            "atlas":  "UI_MainUI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2064,
+                            "textureRectUnity":  {
+                                                     "x":  1968.0,
+                                                     "y":  1465.0,
+                                                     "width":  234.0,
+                                                     "height":  296.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "LoadingBg03_20-9",
+        "file":  "assets/loading-artwork/LoadingBg03_20-9.png",
+        "category":  "loading-artwork",
+        "width":  2048,
+        "height":  922,
+        "logicalSize":  {
+                            "width":  2048.0,
+                            "height":  922.0
+                        },
+        "border":  {
+                       "left":  0.0,
+                       "bottom":  0.0,
+                       "right":  0.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  60.0,
+        "sha256":  "923d91a46b8644c82cb8f8842965e01753b3cbc95f052a46a98b0061b0c24e73",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  8571,
+                            "atlas":  "UI_Loading Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2046,
+                            "textureRectUnity":  {
+                                                     "x":  1924.0,
+                                                     "y":  2010.0,
+                                                     "width":  2048.0,
+                                                     "height":  922.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    },
+    {
+        "name":  "Checked-Icon",
+        "file":  "assets/other-ui/Checked-Icon.png",
+        "category":  "other-ui",
+        "width":  512,
+        "height":  368,
+        "logicalSize":  {
+                            "width":  512.0,
+                            "height":  368.0
+                        },
+        "border":  {
+                       "left":  0.0,
+                       "bottom":  0.0,
+                       "right":  0.0,
+                       "top":  0.0
+                   },
+        "pivot":  {
+                      "x":  0.5,
+                      "y":  0.5
+                  },
+        "pixelsPerUnit":  0.9481481313705444,
+        "sha256":  "37a0ea253a314aa192dedbdf9894938ffba96239b4cc399045232698276d75cc",
+        "sources":  [
+                        {
+                            "file":  "sharedassets0.assets",
+                            "pathId":  10409,
+                            "atlas":  "UI Sprite Atlas",
+                            "textureFileId":  0,
+                            "texturePathId":  2069,
+                            "textureRectUnity":  {
+                                                     "x":  1060.0,
+                                                     "y":  3209.0,
+                                                     "width":  512.0,
+                                                     "height":  368.0
+                                                 },
+                            "textureRectOffset":  {
+                                                      "x":  0.0,
+                                                      "y":  0.0
+                                                  },
+                            "settingsRaw":  67
+                        }
+                    ]
+    }
+]

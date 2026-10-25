@@ -48,6 +48,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Launcher publish failed. Restore Launcher/Laun
 $licensesDirectory = Join-Path $payloadDirectory 'licenses'
 New-Item -ItemType Directory -Path $licensesDirectory -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'licenses\BepInEx-LICENSE.txt'),(Join-Path $PSScriptRoot 'licenses\SOURCES.txt') -Destination $licensesDirectory
+Copy-Item -LiteralPath (Join-Path $modDirectory 'Launcher\Assets\README.md') -Destination (Join-Path $licensesDirectory 'Mechabellum-UI-assets.txt')
+Copy-Item -LiteralPath (Join-Path $modDirectory 'Launcher\Assets\provenance.json') -Destination (Join-Path $licensesDirectory 'Mechabellum-UI-provenance.json')
+Copy-Item -LiteralPath (Join-Path $modDirectory 'Launcher\Assets\Roboto-LICENSE.txt'),(Join-Path $modDirectory 'Launcher\Assets\Xolonium-LICENSE.txt'),(Join-Path $modDirectory 'Launcher\Assets\Font-NOTICES.txt') -Destination $licensesDirectory
 $assets = Get-Content -LiteralPath (Join-Path $modDirectory 'Launcher\obj\project.assets.json') -Raw | ConvertFrom-Json
 foreach ($framework in $assets.project.frameworks.PSObject.Properties) {
     foreach ($package in $framework.Value.downloadDependencies) {
@@ -70,12 +73,34 @@ $launcher = Join-Path $launcherDirectory 'MechaCommunityMod.Launcher.exe'
 $validation = Start-Process -FilePath $launcher -ArgumentList @('--validate-defaults',('"' + $DefaultsFile + '"')) -PassThru -Wait -WindowStyle Hidden
 if ($validation.ExitCode -ne 0) { throw 'Invalid default settings.' }
 $defaultValues = (Get-Content -LiteralPath $DefaultsFile -Raw | ConvertFrom-Json).settings
+$fairnessPath = Join-Path $stage 'feature-fairness.json'
+$fairnessExport = Start-Process -FilePath $launcher -ArgumentList @('--export-fairness',('"' + $fairnessPath + '"')) -PassThru -Wait -WindowStyle Hidden
+if ($fairnessExport.ExitCode -ne 0) { throw 'Could not export feature fairness ratings.' }
+$fairness = Get-Content -LiteralPath $fairnessPath -Raw | ConvertFrom-Json
 $defines = @('#define ModVersion "' + $version + '"')
-foreach ($feature in @('LiveOverlay','IndividualStats','PostGameStats')) {
-    $value = $defaultValues.('Features/' + $feature)
-    if ($null -eq $value) { $value = $true }
-    $defines += '#define Default' + $feature + ' "' + $value.ToString().ToLowerInvariant() + '"'
+$fairnessText = @('FAIR PLAY', '', $fairness.disclaimer, '')
+foreach ($level in $fairness.levels) {
+    $fairnessText += $level.title
+    $fairnessText += $level.description
+    $fairnessText += ''
+    $defines += '#define Rating' + $level.badge + ' "' + $level.title.Replace('"','""') + '"'
+    $color = $level.color.TrimStart('#')
+    $defines += '#define RatingColor' + $level.badge + ' "$00' + $color.Substring(4,2) + $color.Substring(2,2) + $color.Substring(0,2) + '"'
 }
+$fairnessText += 'FEATURE RATINGS'
+foreach ($feature in $fairness.features) {
+    $value = $defaultValues.($feature.id)
+    if ($null -eq $value) { $value = $feature.defaultValue }
+    if ($feature.level -eq 'RED' -and $value.ToString().ToLowerInvariant() -ne 'false') {
+        throw ('High-impact helpers must be disabled in distribution defaults: ' + $feature.id)
+    }
+    $defines += '#define Default' + $feature.key + ' "' + $value.ToString().ToLowerInvariant() + '"'
+    $defines += '#define Caption' + $feature.key + ' "' + $feature.caption.Replace('"','""') + '"'
+    $fairnessText += $feature.caption + ' - ' + ($fairness.levels | Where-Object badge -eq $feature.level).title
+    $fairnessText += $feature.reason
+    $fairnessText += ''
+}
+Set-Content -LiteralPath (Join-Path $payloadDirectory 'FAIRNESS.txt') -Value $fairnessText -Encoding UTF8
 Set-Content -LiteralPath (Join-Path $stage 'build-values.iss') -Value $defines -Encoding UTF8
 $checks = foreach ($file in Get-ChildItem -LiteralPath $loaderDirectory -Recurse -File) {
     $relative = $file.FullName.Substring($loaderDirectory.Length + 1)
@@ -91,7 +116,7 @@ $loaderFiles = @(Get-ChildItem -LiteralPath $loaderDirectory -Recurse -File | Fo
 $loaderFiles += [ordered]@{ path = 'BepInEx\unity-libs\2022.3.62.zip'; sha256 = '575E7D600F69DE8200CCF4DB700B3AE6252366C22E8C3434C860E428974518D1' }
 $manifest = [ordered]@{
     modVersion = $version
-    statisticsPluginVersion = [regex]::Match((Get-Content -LiteralPath (Join-Path $modDirectory 'Plugins\BattleStatistics\BattleStatisticsPlugin.cs') -Raw), 'internal const string Version = "([0-9.]+)"').Groups[1].Value
+    statisticsPluginVersion = $version
     statisticsPluginSha256 = (Get-FileHash -LiteralPath $plugin -Algorithm SHA256).Hash
     loaderVersion = '6.0.0-be.788+5b766a3'
     loaderUrl = 'https://builds.bepinex.dev/projects/bepinex_be/788/BepInEx-Unity.IL2CPP-win-x64-6.0.0-be.788%2B5b766a3.zip'
